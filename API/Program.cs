@@ -1,6 +1,10 @@
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Core.Interfaces;
+using API.Middleware;
+using API.Errors;
+using API.Extensions;
+using Microsoft.AspNetCore.Mvc;
 using AutoMapper;
 using Microsoft.Extensions.Logging; // Import ILogger
 using System;
@@ -10,30 +14,17 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddDbContext<StoreContext>(opt => 
-{
-    opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
-});
-builder.Services.AddScoped<IproductRepository, ProductRepository>();
-builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-// Register the logger service with a category
-builder.Services.AddLogging(loggingBuilder =>
-{
-    loggingBuilder.AddConsole(); // Add the Console logger
-    loggingBuilder.AddDebug();   // Add the Debug logger
-});
+builder.Services.AddApplicationServices(builder.Configuration);
 var app = builder.Build();
 
+
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseMiddleware<ExceptionMiddleware>();
+
+app.UseStatusCodePagesWithReExecute("/errors/{0}");
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseStaticFiles();
 app.UseAuthorization();
